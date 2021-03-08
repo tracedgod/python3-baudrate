@@ -1,3 +1,7 @@
+# Fork of sickcodes' fork of baudrate
+
+I ran across issues getting the script to run on Windows, attempting to fix + add possible features to script.
+
 # Baudrate Python 3 - fork of baudrate
 
 ```bash
@@ -26,9 +30,4 @@ Upgraded to Python3 by @Loris1123: https://github.com/Loris1123
 
 Modernized by Sick.Codes @sickcodes : https://github.com/sickcodes
 
-# Follow for Updates
-
-https://twitter.com/sickcodes
-
-https://sick.codes
-
+Windows Fix @tracedgod : https://github.com/tracedgod
