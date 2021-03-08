@@ -4,33 +4,55 @@
 # Craig Heffner     @devttys0   https://github.com/devttys0
 #                   @Loris1123  https://github.com/Loris1123
 # Sick.Codes        @sickcodes  https://github.com/sickcodes
+# tracedg0d         @tracedgod  https://github.com/tracedgod
 # Usage:
 #           pip install -r requirements.txt
-#           sudo python baudrate.py /dev/ttyUSB0
 
 import sys
 import time
 import serial
+import serial.tools.list_ports
 from threading import Thread
-import tty
-import termios
 import subprocess
+from sys import platform as os
 from getopt import getopt as GetOpt, GetoptError
-import getch
 
-class RawInput:
-    """Gets a single character from standard input.  Does not echo to the screen."""
+class OsDetect:
+    """Detects If EUD is Running Windows Or Linux and Imports Modules as Necessary."""
+    if os == "win32":
+        import msvcrt 
+        ch = msvcrt.getch()
+    else:
+        import tty
+        import termios
+        import getch
+
+class PortScanner:
+    print("Listing Available Ports")
+    availablePorts = list(serial.tools.list_ports.comports())
+    
+    for p in availablePorts:
+        print(p)
+        
+
+class _Getch:
+    """Gets a single character from standard input.  Does not echo to the
+screen."""
     def __init__(self):
         try:
-            self.impl = RawInputWindows()
+            self.impl = _GetchWindows()
         except ImportError:
-            self.impl = RawInputUnix()
+            self.impl = _GetchUnix()
 
     def __call__(self): return self.impl()
 
 
-class RawInputUnix:
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
     def __call__(self):
+        import sys, tty, termios
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
@@ -41,9 +63,17 @@ class RawInputUnix:
         return ch
 
 
-class RawInputWindows:
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
     def __call__(self):
-        return getch.getch()
+        import msvcrt
+        return msvcrt.getch()
+
+
+getch = _Getch()
+
 
 class Baudrate:
 
@@ -76,9 +106,6 @@ class Baudrate:
         "3686400",
     ]
 
-    UPKEYS = ['u', 'U', 'A']
-    DOWNKEYS = ['d', 'D', 'B']
-
     MIN_CHAR_COUNT = 25
     WHITESPACE = [' ', '\t', '\r', '\n']
     PUNCTUATION = ['.', ',', ':', ';', '?', '!']
@@ -91,13 +118,13 @@ class Baudrate:
         self.name = name
         self.auto_detect = auto
         self.verbose = verbose
-        self.index = len(self.BAUDRATES) - 1
+        self.index = len(self.BAUDRATES) + 1
         self.valid_characters = []
         self.ctlc = False
         self.thread = None
-
+        
         self._gen_char_list()
-
+        
     def _gen_char_list(self):
         c = ' '
 
@@ -194,12 +221,12 @@ class Baudrate:
         return self.BAUDRATES[self.index]
 
     def HandleKeypress(self, *args):
-        userinput = RawInput()
-        while not self.ctlc:
-            c = userinput()
-            if c in self.UPKEYS:
+        from msvcrt import getch
+        while True:
+            c = ord(getch())
+            if c == 72:
                 self.NextBaudrate(1)
-            elif c in self.DOWNKEYS:
+            elif c == 80:
                 self.NextBaudrate(-1)
             elif c == '\x03':
                 self.ctlc = True
@@ -258,7 +285,8 @@ if __name__ == '__main__':
         print("\t-h                 Display help")
         print("")
         sys.exit(1)
-
+    
+    
     def main():
         display = False
         verbose = True
@@ -267,7 +295,7 @@ if __name__ == '__main__':
         threshold = 25
         timeout = 1
         name = None
-        port = '/dev/ttyUSB0'
+        port = input("Please Select Desired Port: ")
 
         try:
             (opts, args) = GetOpt(sys.argv[1:], 'p:t:c:n:abqh')
@@ -341,5 +369,7 @@ if __name__ == '__main__':
 
             baud.Close()
 
+    OsDetect()
+    PortScanner()
     main()
 
